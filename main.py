@@ -50,7 +50,7 @@ def analyze_with_hf(title, description):
 1. 3行要約
 2. 見る価値（高・中・低）
 3. 重要ポイント3つ
-4. どんな人向けか
+3. どんな人向けか
 """
 
     payload = {"inputs": prompt[:2000]}
@@ -58,10 +58,16 @@ def analyze_with_hf(title, description):
     response = requests.post(API_URL, headers=headers, json=payload)
     result = response.json()
 
-    if isinstance(result, list):
+    # デバッグ用
+    print(result)
+
+    if isinstance(result, list) and "generated_text" in result[0]:
         return result[0]["generated_text"]
+    elif "error" in result:
+        return f"AIモデル読み込み中またはエラー: {result['error']}"
     else:
-        return "分析に失敗しました"
+        return f"予期しないレスポンス: {result}"
+
 
 def send_to_slack(message):
     requests.post(SLACK_WEBHOOK_URL, json={"text": message})
