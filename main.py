@@ -26,9 +26,11 @@ def get_latest_video_id(channel_id):
 
 
 def get_transcript(video_id):
-    transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ja', 'en'])
-    text = " ".join([t["text"] for t in transcript])
+    api = YouTubeTranscriptApi()
+    transcript = api.fetch(video_id, languages=['ja', 'en'])
+    text = " ".join([t.text for t in transcript])
     return text
+
 
 def summarize_with_hf(text):
     API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
