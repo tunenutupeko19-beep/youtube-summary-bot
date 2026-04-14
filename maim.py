@@ -6,41 +6,35 @@ from datetime import datetime
 YOUTUBE_VIDEO_ID = "VIDEO_ID_HERE"
 
 SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
-CLAUDE_API_KEY = os.environ["CLAUDE_API_KEY"]
+HF_API_KEY = os.environ["HF_API_KEY"]
 
 def get_transcript(video_id):
     transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ja', 'en'])
     text = " ".join([t["text"] for t in transcript])
     return text
 
-def summarize_with_claude(text):
-    url = "https://api.anthropic.com/v1/messages"
-    headers = {
-        "x-api-key": CLAUDE_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json"
+def summarize_with_hf(text):
+    API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
+    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+    
+    payload = {
+        "inputs": text[:2000]
     }
 
-    prompt = f"以下のYouTube動画の内容を日本語でわかりやすく要約してください:\n\n{text[:100000]}"
-
-    data = {
-        "model": "claude-3-5-sonnet-latest",
-        "max_tokens": 1000,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ]
-    }
-
-    response = requests.post(url, headers=headers, json=data)
+    response = requests.post(API_URL, headers=headers, json=payload)
     result = response.json()
-    return result["content"][0]["text"]
+
+    if isinstance(result, list):
+        return result[0]["summary_text"]
+    else:
+        return "要約に失敗しました"
 
 def send_to_slack(message):
     requests.post(SLACK_WEBHOOK_URL, json={"text": message})
 
 def main():
     transcript = get_transcript(YOUTUBE_VIDEO_ID)
-    summary = summarize_with_claude(transcript)
+    summary = summarize_with_hf(transcript)
     today = datetime.now().strftime("%Y-%m-%d")
     final_message = f"📺 YouTube要約 ({today})\n\n{summary}"
     send_to_slack(final_message)
