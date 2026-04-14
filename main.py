@@ -34,7 +34,7 @@ def get_latest_video_info(channel_id):
 
 
 def analyze_with_hf(title, description):
-    API_URL = "https://router.huggingface.co/hf-inference/models/google/flan-t5-large"
+    API_URL = "https://router.huggingface.co/hf-inference/models/google/flan-t5-base"
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
 
     prompt = f"""
