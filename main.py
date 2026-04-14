@@ -23,9 +23,15 @@ def get_latest_video_info(channel_id):
     title = entry.find("atom:title", namespace).text
     video_id = entry.find("yt:videoId", namespace).text
     link = entry.find("atom:link", namespace).attrib["href"]
-    description = entry.find("atom:content", namespace).text
+
+    description_element = entry.find("atom:summary", namespace)
+    if description_element is not None:
+        description = description_element.text
+    else:
+        description = "概要が取得できませんでした"
 
     return title, description, link
+
 
 def analyze_with_hf(title, description):
     API_URL = "https://api-inference.huggingface.co/models/google/flan-t5-large"
