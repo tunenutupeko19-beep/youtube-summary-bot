@@ -1,12 +1,22 @@
 import os
 import requests
+import xml.etree.ElementTree as ET
 from youtube_transcript_api import YouTubeTranscriptApi
 from datetime import datetime
 
-YOUTUBE_VIDEO_ID = "VIDEO_ID_HERE"
+CHANNEL_ID = "UCJinHzrgyp2MKWljyyMFvaw"
 
 SLACK_WEBHOOK_URL = os.environ["SLACK_WEBHOOK_URL"]
 HF_API_KEY = os.environ["HF_API_KEY"]
+
+def get_latest_video_id(channel_id):
+    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+    response = requests.get(rss_url)
+    root = ET.fromstring(response.content)
+
+    namespace = {"yt": "http://www.youtube.com/xml/schemas/2015"}
+    video_id = root.find("entry").find("yt:videoId", namespace).text
+    return video_id
 
 def get_transcript(video_id):
     transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ja', 'en'])
@@ -16,10 +26,7 @@ def get_transcript(video_id):
 def summarize_with_hf(text):
     API_URL = "https://api-inference.huggingface.co/models/facebook/bart-large-cnn"
     headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-    
-    payload = {
-        "inputs": text[:2000]
-    }
+    payload = {"inputs": text[:2000]}
 
     response = requests.post(API_URL, headers=headers, json=payload)
     result = response.json()
@@ -33,10 +40,11 @@ def send_to_slack(message):
     requests.post(SLACK_WEBHOOK_URL, json={"text": message})
 
 def main():
-    transcript = get_transcript(YOUTUBE_VIDEO_ID)
+    video_id = get_latest_video_id(CHANNEL_ID)
+    transcript = get_transcript(video_id)
     summary = summarize_with_hf(transcript)
     today = datetime.now().strftime("%Y-%m-%d")
-    final_message = f"📺 YouTube要約 ({today})\n\n{summary}"
+    final_message = f"📺 最新動画要約 ({today})\n\n{summary}"
     send_to_slack(final_message)
 
 if __name__ == "__main__":
