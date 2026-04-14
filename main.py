@@ -14,9 +14,16 @@ def get_latest_video_id(channel_id):
     response = requests.get(rss_url)
     root = ET.fromstring(response.content)
 
-    namespace = {"yt": "http://www.youtube.com/xml/schemas/2015"}
-    video_id = root.find("entry").find("yt:videoId", namespace).text
+    namespace = {
+        "atom": "http://www.w3.org/2005/Atom",
+        "yt": "http://www.youtube.com/xml/schemas/2015"
+    }
+
+    entry = root.find("atom:entry", namespace)
+    video_id = entry.find("yt:videoId", namespace).text
+
     return video_id
+
 
 def get_transcript(video_id):
     transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['ja', 'en'])
